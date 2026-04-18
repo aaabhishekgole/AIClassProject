@@ -1,0 +1,161 @@
+{
+  "name": "Automated Bug Report Generator from Error Logs",
+  "active": false,
+  "tags": [],
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -760,
+        80
+      ],
+      "id": "0dac2714-4b5a-4c0e-8571-b56304949084",
+      "name": "When clicking 'Test workflow'"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a2a387c4-c708-44f7-bef6-bb9eaed957e0",
+              "name": "error_log",
+              "value": "[ERROR] 2026-02-15 14:32:01 | POST /api/checkout | 500 Internal Server Error | user_id=4521 | cart_items=3 | payment_gateway_timeout after 30s",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -520,
+        80
+      ],
+      "id": "9d4d606d-17c6-45d5-80fa-7ff10d3b1b1a",
+      "name": "Set Error Log"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.error_log }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "You are a QA Engineer who converts raw application error logs into structured bug reports.\n\nUse ONLY the log data provided by the user.\nDo NOT invent missing details.\nIf any field cannot be determined from the log, write [UNKNOWN].\n\nReturn the result in exactly this format:\n\nTitle: \"<short bug title>\"\nSeverity: <Low | Medium | High | Critical | [UNKNOWN]>\nSteps to Reproduce: <clear reproduction step based only on the log>\nExpected Result: <expected successful behavior inferred from the request and status, otherwise [UNKNOWN]>\nActual Result: <actual failure observed in the log>\n\nRules:\n- Keep the wording concise and professional.\n- Do not add explanations outside the requested format.\n- Do not include markdown bullets.\n- Do not include fields that were not requested."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -40,
+        80
+      ],
+      "id": "8317ce2c-8c57-48fe-92b3-bcdd307c234b",
+      "name": "Generate Bug Report"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        300
+      ],
+      "id": "1b6cde75-dce8-4210-b995-e2b42a57cf0c",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ed252698-f322-4eb8-9ea9-d60201f18d4b",
+              "name": "error_log",
+              "value": "={{ $('Set Error Log').item.json.error_log }}",
+              "type": "string"
+            },
+            {
+              "id": "5b1be1c9-36af-4392-a243-0b1c7411ef31",
+              "name": "bug_report",
+              "value": "={{ $json.text || $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        260,
+        80
+      ],
+      "id": "95c42e82-1537-4e70-a8de-1dd9304a65d4",
+      "name": "Format Output"
+    }
+  ],
+  "connections": {
+    "When clicking 'Test workflow'": {
+      "main": [
+        [
+          {
+            "node": "Set Error Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Error Log": {
+      "main": [
+        [
+          {
+            "node": "Generate Bug Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Bug Report",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Bug Report": {
+      "main": [
+        [
+          {
+            "node": "Format Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0dfcf517-f13a-43cf-b1ce-878dc021e387",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
