@@ -1,0 +1,167 @@
+{
+  "name": "Test Case Generator from JIRA Ticket",
+  "active": false,
+  "tags": [],
+  "nodes": [
+    {
+      "parameters": {
+        "public": false,
+        "options": {
+          "responseMode": "lastNode"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -760,
+        60
+      ],
+      "id": "dae2106a-62b5-4ce6-b028-817d513ad0b0",
+      "name": "When chat message received",
+      "webhookId": "5087d771-94b0-4cb6-8b23-f26e1e36002c"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7e3fc301-c276-4679-8fa3-06e47b0d7b19",
+              "name": "requirement_input",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -500,
+        60
+      ],
+      "id": "160eec25-687f-4850-a0c8-493cd27b1454",
+      "name": "Set Requirement Input"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'Generate functional test cases from this requirement:\\n\\n' + $json.requirement_input }}",
+        "messages": {
+          "messageValues": [
+            {
+              "type": "SystemMessagePromptTemplate",
+              "message": "RICE POT Framework\n\nRole:\nYou are a Senior QA Engineer.\n\nInput:\nYou will receive either a software requirement, a user story, acceptance criteria, or a short JIRA-style description.\n\nContext:\nYour job is to derive functional test cases from the provided requirement only.\n\nExpectation:\nCover positive, negative, boundary, and error-handling scenarios when they are supported by the provided requirement.\n\nProcess:\n- Read the requirement carefully.\n- Identify the main business rule, validations, limits, and risk areas.\n- Generate only test cases that are justified by the given requirement.\n- If the input is only a ticket ID and does not contain usable requirement details, do not invent anything.\n\nOutput:\nReturn a markdown table with exactly these columns:\n| TC_ID | Test Scenario | Preconditions | Test Steps | Test Data | Expected Result | Priority |\n\nConstraints:\n- Generate ONLY from the provided requirement.\n- If information is missing, write \"Needs clarification\".\n- Do not invent backend rules, UI details, or validations not present in the requirement.\n- Keep test cases concise and functional.\n- Produce 6 to 8 test cases when enough detail exists; otherwise produce fewer accurate rows."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.6,
+      "position": [
+        -20,
+        60
+      ],
+      "id": "38412a20-a6a9-4b8f-8181-116cda3fd125",
+      "name": "Generate Test Cases"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        -20,
+        300
+      ],
+      "id": "b809a30a-e26b-4c38-88e4-f7dc3a85c34a",
+      "name": "Groq Chat Model"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "741346cd-b28d-4a29-a9a7-c224f2534b89",
+              "name": "requirement_input",
+              "value": "={{ $('Set Requirement Input').item.json.requirement_input }}",
+              "type": "string"
+            },
+            {
+              "id": "a7faaf0b-c59c-4d7d-8d14-c1c250d9032b",
+              "name": "text",
+              "value": "={{ $json.text || $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        280,
+        60
+      ],
+      "id": "ea7fd346-a65a-44b6-aac0-f7061fabbe72",
+      "name": "Set Chat Response"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Set Requirement Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Requirement Input": {
+      "main": [
+        [
+          {
+            "node": "Generate Test Cases",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Test Cases",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Test Cases": {
+      "main": [
+        [
+          {
+            "node": "Set Chat Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5427bdf4-6707-4e93-9853-144f87141ba2",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
